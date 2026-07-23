@@ -25,9 +25,8 @@ jobs:
 
     - name: Create Project & Insert App Code
       run: |
-        flutter create . --org com.raman.app --project-name my_app --force
+        flutter create . --org com.raman.app --project-name my_app
         
-        # كتابة كود واجهة التحكم بالشبكة مباشرة داخل ملف main.dart
         cat << 'EOF' > lib/main.dart
         import 'package:flutter/material.dart';
 
@@ -189,7 +188,7 @@ jobs:
                                   ),
                                   const Divider(height: 16),
                                   Row(
-                                    mainAxisAlignment: TextAxisAlignment.spaceBetween,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(device.isProtected ? 'محمي دائماً (لا يمكن حظره)' : 'وقت الحظر: ${device.blockTime}', style: TextStyle(fontSize: 12, color: device.isProtected ? Colors.green : Colors.grey.shade700, fontWeight: FontWeight.w500)),
                                     ],
