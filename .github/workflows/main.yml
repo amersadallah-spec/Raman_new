@@ -95,13 +95,17 @@ jobs:
 
           @override
           Widget build(BuildContext context) {
+            // استخدام IndexedStack بدلاً من القائمة العادية لضمان بقاء حالة الصفحات وعدم إعادة تحميلها عند التنقل
             final List<Widget> screens = [
               RouterBridgeScreen(onNavigate: navigateToTab),
               const NetworkControlScreen(),
             ];
 
             return Scaffold(
-              body: screens[_currentIndex],
+              body: IndexedStack(
+                index: _currentIndex,
+                children: screens,
+              ),
               bottomNavigationBar: BottomNavigationBar(
                 currentIndex: _currentIndex,
                 onTap: (index) {
@@ -125,7 +129,7 @@ jobs:
           }
         }
 
-        // الصفحة الأولى: بوابة ربط الراوتر عبر المتصفح الخارجي لضمان استقرار الجلسة بدون أخطاء
+        // الصفحة الأولى: بوابة ربط الراوتر مع زر ذكي يحافظ على استقرار التطبيق
         class RouterBridgeScreen extends StatelessWidget {
           const RouterBridgeScreen({super.key, required this.onNavigate});
           final Function(int) onNavigate;
@@ -166,7 +170,7 @@ jobs:
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        '1. انقر على زر "فتح صفحة الراوتر" لتسجيل الدخول عبر المتصفح.\n2. بعد فتح الصفحة وتسجيل الجلسة، انتقل مباشرة إلى "لوحة التحكم".',
+                        '1. اضغط على زر فتح الراوتر لتسجيل الدخول.\n2. بعد إتمام تسجيل الدخول، عد إلى التطبيق وانتقل إلى "لوحة التحكم" مباشرة.',
                         style: TextStyle(fontSize: 14, color: Colors.black54, height: 1.5),
                         textAlign: TextAlign.center,
                       ),
@@ -218,7 +222,7 @@ jobs:
           });
         }
 
-        // الصفحة الثانية: لوحة التحكم بالأجهزة الموصولة وإدارتها
+        // الصفحة الثانية: لوحة التحكم بالأجهزة الموصولة وإدارتها مع الحفاظ على البيانات بالذاكرة المحلية
         class NetworkControlScreen extends StatefulWidget {
           const NetworkControlScreen({super.key});
 
@@ -226,7 +230,10 @@ jobs:
           State<NetworkControlScreen> createState() => _NetworkControlScreenState();
         }
 
-        class _NetworkControlScreenState extends State<NetworkControlScreen> {
+        class _NetworkControlScreenState extends State<NetworkControlScreen> with AutomaticKeepAliveClientMixin {
+          @override
+          bool get wantKeepAlive => true;
+
           bool isGlobalInternetBlocked = false;
 
           final List<DeviceItem> devices = [
@@ -265,6 +272,7 @@ jobs:
 
           @override
           Widget build(BuildContext context) {
+            super.build(context);
             return Scaffold(
               appBar: AppBar(
                 title: const Text('الخطوة 2: لوحة التحكم بالأجهزة', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
