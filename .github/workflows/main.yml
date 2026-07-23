@@ -43,7 +43,7 @@ jobs:
           flutter:
             sdk: flutter
           shared_preferences: ^2.2.2
-          url_launcher: ^6.2.2
+          webview_flutter: ^4.4.4
 
         dev_dependencies:
           flutter_test:
@@ -57,7 +57,7 @@ jobs:
         cat << 'EOF' > lib/main.dart
         import 'package:flutter/material.dart';
         import 'package:shared_preferences/shared_preferences.dart';
-        import 'package:url_launcher/url_launcher.dart';
+        import 'package:webview_flutter/webview_flutter.dart';
 
         void main() {
           runApp(const HomeNetworkApp());
@@ -112,7 +112,7 @@ jobs:
                 selectedItemColor: Colors.indigo,
                 items: const [
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.link),
+                    icon: Icon(Icons.router),
                     label: 'ربط الراوتر 1',
                   ),
                   BottomNavigationBarItem(
@@ -125,79 +125,85 @@ jobs:
           }
         }
 
-        // الصفحة الأولى: بوابة الاتصال وفتح صفحة الراوتر لتسجيل الجلسة
-        class RouterBridgeScreen extends StatelessWidget {
+        // الصفحة الأولى: متصفح داخلي مباشر لصفحة الراوتر للحفاظ على الجلسة مستقرة
+        class RouterBridgeScreen extends StatefulWidget {
           final Function(int) onNavigate;
 
           const RouterBridgeScreen({super.key, required this.onNavigate});
 
-          Future<void> _launchRouter(BuildContext context) async {
-            final Uri url = Uri.parse('http://192.168.100.1');
-            try {
-              if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-                throw 'Could not launch $url';
-              }
-            } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('تعذر فتح الصفحة: $e')),
-              );
-            }
+          @override
+          State<RouterBridgeScreen> createState() => _RouterBridgeScreenState();
+        }
+
+        class _RouterBridgeScreenState extends State<RouterBridgeScreen> {
+          late final WebViewController _controller;
+          bool isLoading = true;
+
+          @override
+          void initState() {
+            super.initState();
+            _controller = WebViewController()
+              ..setJavaScriptMode(JavaScriptMode.unrestricted)
+              ..setBackgroundColor(const Color(0x00000000))
+              ..setNavigationDelegate(
+                NavigationDelegate(
+                  onPageFinished: (String url) {
+                    setState(() {
+                      isLoading = false;
+                    });
+                  },
+                ),
+              )
+              ..loadRequest(Uri.parse('http://192.168.100.1'));
           }
 
           @override
           Widget build(BuildContext context) {
             return Scaffold(
               appBar: AppBar(
-                title: const Text('الخطوة 1: بوابة ربط الراوتر', style: TextStyle(color: Colors.white, fontSize: 16)),
+                title: const Text('الخطوة 1: تسجيل الدخول للراوتر', style: TextStyle(color: Colors.white, fontSize: 16)),
                 backgroundColor: Colors.indigo,
                 centerTitle: true,
-              ),
-              body: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.wifi_tethering, size: 80, color: Colors.indigo),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'تفعيل اتصال الراوتر (Huawei HG8245H)',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        '1. انقر على الزر أدناه لفتح صفحة الراوتر وتسجيل الدخول عبر المتصفح.\n2. بعد فتح الصفحة واتصال الجلسة، انتقل مباشرة إلى "لوحة التحكم" للتحكم بالأجهزة.',
-                        style: TextStyle(fontSize: 14, color: Colors.black54, height: 1.5),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 30),
-                      ElevatedButton.icon(
-                        onPressed: () => _launchRouter(context),
-                        icon: const Icon(Icons.open_in_browser, size: 24),
-                        label: const Text('فتح صفحة الراوتر (192.168.100.1)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: () => onNavigate(1), // الانتقال الفوري للصفحة الثانية
-                        icon: const Icon(Icons.arrow_forward, size: 22),
-                        label: const Text('الانتقال إلى لوحة التحكم بالأجهزة', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green.shade700,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ],
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    onPressed: () => _controller.reload(),
                   ),
-                ),
+                ],
+              ),
+              body: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    color: Colors.indigo.shade50,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'سجل الدخول هنا، ثم انتقل للوحة التحكم.',
+                            style: TextStyle(fontSize: 12, color: Colors.indigo, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => widget.onNavigate(1),
+                          icon: const Icon(Icons.arrow_forward, size: 16),
+                          label: const Text('لوحة التحكم ➔', style: TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isLoading)
+                    const LinearProgressIndicator(color: Colors.indigo),
+                  Expanded(
+                    child: WebViewWidget(controller: _controller),
+                  ),
+                ],
               ),
             );
           }
@@ -233,7 +239,7 @@ jobs:
           final List<DeviceItem> devices = [
             DeviceItem(name: 'موبايل الأستاذ عامر (Samsung S25 Ultra)', ip: '192.168.100.10', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
             DeviceItem(name: 'جهاز ماي تي في (My TV - استثناء)', ip: '192.168.100.15', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
-            DeviceItem(name: 'هاتف الصالة', ip: '192.168.100.20', isBlocked: false, blockTime: '14:00 - 16:00'),
+            DeviceItem(name: 'هاتف الصالة', ip: '192.168.100.20', isBlocked: false, blockTime: '14:00 - 23:00'),
             DeviceItem(name: 'جهاز اللابتوب', ip: '192.168.100.25', isBlocked: false, blockTime: '22:00 - 06:00'),
             DeviceItem(name: 'جهاز الشاشة الذكية', ip: '192.168.100.30', isBlocked: false, blockTime: '01:00 - 05:00'),
           ];
@@ -248,8 +254,8 @@ jobs:
             final prefs = await SharedPreferences.getInstance();
             setState(() {
               isGlobalInternetBlocked = prefs.getBool('global_block') ?? false;
-              for (int i = 2; i < devices.length; i++) {
-                devices[i].isBlocked = prefs.getBool('block_$i') ?? false;
+              for (int i = 0; i < devices.length; i++) {
+                devices[i].isBlocked = prefs.getBool('block_$i') ?? devices[i].isBlocked;
                 devices[i].blockTime = prefs.getString('time_$i') ?? devices[i].blockTime;
               }
             });
@@ -258,7 +264,7 @@ jobs:
           Future<void> _saveData() async {
             final prefs = await SharedPreferences.getInstance();
             prefs.setBool('global_block', isGlobalInternetBlocked);
-            for (int i = 2; i < devices.length; i++) {
+            for (int i = 0; i < devices.length; i++) {
               prefs.setBool('block_$i', devices[i].isBlocked);
               prefs.setString('time_$i', devices[i].blockTime);
             }
@@ -289,7 +295,7 @@ jobs:
                           SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'تم الاتصال بجلسة الراوتر بنجاح. يمكنك الآن التحكم بحظر الأجهزة وإدارتها أدناه بسلاسة.',
+                              'جلسة الراوتر نشطة داخل التطبيق. يمكنك التحكم بالحظر وإدارتها أدناه بسلاسة.',
                               style: TextStyle(fontSize: 12, color: Colors.indigo),
                             ),
                           ),
@@ -310,12 +316,12 @@ jobs:
                                 _saveData();
                               });
                             },
-                            icon: const Icon(Icons.block, size: 26),
-                            label: const Text('حظر الإنترنت', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            icon: const Icon(Icons.block, size: 24),
+                            label: const Text('حظر الإنترنت', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isGlobalInternetBlocked ? Colors.red : Colors.red.shade100,
                               foregroundColor: isGlobalInternetBlocked ? Colors.white : Colors.red.shade900,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
@@ -332,12 +338,12 @@ jobs:
                                 _saveData();
                               });
                             },
-                            icon: const Icon(Icons.wifi, size: 26),
-                            label: const Text('الاتصال بالشبكة', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            icon: const Icon(Icons.wifi, size: 24),
+                            label: const Text('الاتصال بالشبكة', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: !isGlobalInternetBlocked ? Colors.green : Colors.green.shade100,
                               foregroundColor: !isGlobalInternetBlocked ? Colors.white : Colors.green.shade900,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
@@ -374,8 +380,8 @@ jobs:
                                           Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(device.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: device.isProtected ? Colors.green.shade800 : Colors.black87)),
-                                              Text(device.ip, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                              Text(device.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: device.isProtected ? Colors.green.shade800 : Colors.black87)),
+                                              Text(device.ip, style: const TextStyle(color: Colors.grey, fontSize: 11)),
                                             ],
                                           ),
                                         ],
@@ -398,13 +404,13 @@ jobs:
                                     children: [
                                       Text(
                                         device.isProtected ? 'محمي دائماً (استثناء رئيسي)' : 'وقت الحظر: ${device.blockTime}',
-                                        style: TextStyle(fontSize: 12, color: device.isProtected ? Colors.green : Colors.grey.shade700, fontWeight: FontWeight.w500),
+                                        style: TextStyle(fontSize: 11, color: device.isProtected ? Colors.green : Colors.grey.shade700, fontWeight: FontWeight.w500),
                                       ),
                                       if (!device.isProtected)
                                         TextButton.icon(
                                           onPressed: () => _showEditTimeDialog(context, device),
-                                          icon: const Icon(Icons.access_time, size: 16),
-                                          label: const Text('تعديل التوقيت', style: TextStyle(fontSize: 12)),
+                                          icon: const Icon(Icons.access_time, size: 14),
+                                          label: const Text('تعديل التوقيت', style: TextStyle(fontSize: 11)),
                                         ),
                                     ],
                                   ),
