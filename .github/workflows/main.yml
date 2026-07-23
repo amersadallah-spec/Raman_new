@@ -44,6 +44,7 @@ jobs:
             sdk: flutter
           shared_preferences: ^2.2.2
           webview_flutter: ^4.4.4
+          url_launcher: ^6.2.2
 
         dev_dependencies:
           flutter_test:
@@ -58,6 +59,7 @@ jobs:
         import 'package:flutter/material.dart';
         import 'package:shared_preferences/shared_preferences.dart';
         import 'package:webview_flutter/webview_flutter.dart';
+        import 'package:url_launcher/url_launcher.dart';
 
         void main() {
           runApp(const HomeNetworkApp());
@@ -125,7 +127,7 @@ jobs:
           }
         }
 
-        // الصفحة الأولى: متصفح داخلي مباشر لصفحة الراوتر للحفاظ على الجلسة مستقرة
+        // الصفحة الأولى: بوابة ربط الراوتر مع متصفح داخلي معدل وحل أخطاء الذاكرة المؤقتة
         class RouterBridgeScreen extends StatefulWidget {
           final Function(int) onNavigate;
 
@@ -144,7 +146,7 @@ jobs:
             super.initState();
             _controller = WebViewController()
               ..setJavaScriptMode(JavaScriptMode.unrestricted)
-              ..setBackgroundColor(const Color(0x00000000))
+              ..setBackgroundColor(Colors.white)
               ..setNavigationDelegate(
                 NavigationDelegate(
                   onPageFinished: (String url) {
@@ -154,17 +156,36 @@ jobs:
                   },
                 ),
               )
+              ..clearCache() // حل جذري لمشكلة ERR_CACHE_MISS
               ..loadRequest(Uri.parse('http://192.168.100.1'));
+          }
+
+          Future<void> _launchExternalRouter(BuildContext context) async {
+            final Uri url = Uri.parse('http://192.168.100.1');
+            try {
+              if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                throw 'Could not launch $url';
+              }
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('تعذر فتح الصفحة: $e')),
+              );
+            }
           }
 
           @override
           Widget build(BuildContext context) {
             return Scaffold(
               appBar: AppBar(
-                title: const Text('الخطوة 1: تسجيل الدخول للراوتر', style: TextStyle(color: Colors.white, fontSize: 16)),
+                title: const Text('الخطوة 1: بوابة ربط الراوتر', style: TextStyle(color: Colors.white, fontSize: 16)),
                 backgroundColor: Colors.indigo,
                 centerTitle: true,
                 actions: [
+                  IconButton(
+                    icon: const Icon(Icons.open_in_new, color: Colors.white),
+                    onPressed: () => _launchExternalRouter(context),
+                    tooltip: 'فتح في متصفح خارجي',
+                  ),
                   IconButton(
                     icon: const Icon(Icons.refresh, color: Colors.white),
                     onPressed: () => _controller.reload(),
@@ -181,7 +202,7 @@ jobs:
                       children: [
                         const Expanded(
                           child: Text(
-                            'سجل الدخول هنا، ثم انتقل للوحة التحكم.',
+                            'سجل الدخول هنا، ثم انتقل للوحة التحكم بالأجهزة.',
                             style: TextStyle(fontSize: 12, color: Colors.indigo, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -295,7 +316,7 @@ jobs:
                           SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'جلسة الراوتر نشطة داخل التطبيق. يمكنك التحكم بالحظر وإدارتها أدناه بسلاسة.',
+                              'جلسة الراوتر نشطة. يمكنك التحكم بحظر الأجهزة وإدارتها أدناه بسلاسة.',
                               style: TextStyle(fontSize: 12, color: Colors.indigo),
                             ),
                           ),
