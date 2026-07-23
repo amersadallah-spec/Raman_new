@@ -27,7 +27,7 @@ jobs:
       run: |
         flutter create . --org com.raman.app --project-name my_app
         
-        # تحديث pubspec.yaml لإضافة مكتبات الشبكة
+        # تحديث pubspec.yaml لإضافة مكتبة التخزين المحلي
         cat << 'EOF' > pubspec.yaml
         name: my_app
         description: "A new Flutter project for home network control."
@@ -40,7 +40,7 @@ jobs:
         dependencies:
           flutter:
             sdk: flutter
-          http: ^1.2.0
+          shared_preferences: ^2.2.2
 
         dev_dependencies:
           flutter_test:
@@ -51,9 +51,10 @@ jobs:
           uses-material-design: true
         EOF
 
-        # كتابة كود الواجهة والبحث عن الأجهزة
+        # كتابة كود الواجهة مع حفظ الحالة محلياً
         cat << 'EOF' > lib/main.dart
         import 'package:flutter/material.dart';
+        import 'package:shared_preferences/shared_preferences.dart';
 
         void main() {
           runApp(const HomeNetworkApp());
@@ -85,7 +86,7 @@ jobs:
           final String ip;
           bool isBlocked;
           String blockTime;
-          bool isProtected;
+          final bool isProtected;
 
           DeviceItem({
             required this.name,
@@ -98,9 +99,7 @@ jobs:
 
         class _NetworkControlScreenState extends State<NetworkControlScreen> {
           bool isGlobalInternetBlocked = false;
-          bool isScanning = false;
 
-          // القائمة الأولية للأجهزة مع استثناء موبايل الأستاذ عامر وجهاز My TV
           final List<DeviceItem> devices = [
             DeviceItem(name: 'موبايل الأستاذ عامر (استثناء رئيسي)', ip: '192.168.1.10', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
             DeviceItem(name: 'جهاز ماي تي في (My TV - استثناء)', ip: '192.168.1.15', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
@@ -109,25 +108,32 @@ jobs:
             DeviceItem(name: 'جهاز الشاشة الذكية', ip: '192.168.1.30', isBlocked: false, blockTime: '01:00 - 05:00'),
           ];
 
-          void _scanNetwork() async {
-            setState(() {
-              isScanning = true;
-            });
+          @override
+          void initState() {
+            super.initState();
+            _loadSavedData();
+          }
 
-            // محاكاة عملية فحص الشبكة والبحث عن الأجهزة الحقيقية المتصلة بالراوتر
-            await Future.delayed(const Duration(seconds: 2));
-
+          // استرجاع حالة الحظر والأوقات المحفوظة في ذاكرة الهاتف
+          Future<void> _loadSavedData() async {
+            final prefs = await SharedPreferences.getInstance();
             setState(() {
-              isScanning = false;
-              // إضافة جهاز جديد تم اكتشافه على الشبكة كمثال بعد الفحص
-              if (!devices.any((d) => d.ip == '192.168.1.50')) {
-                devices.add(DeviceItem(name: 'جهاز جديد مكتشف على الشبكة', ip: '192.168.1.50', isBlocked: false, blockTime: '02:00 - 04:00'));
+              isGlobalInternetBlocked = prefs.getBool('global_block') ?? false;
+              for (int i = 2; i < devices.length; i++) {
+                devices[i].isBlocked = prefs.getBool('block_$i') ?? false;
+                devices[i].blockTime = prefs.getString('time_$i') ?? devices[i].blockTime;
               }
             });
+          }
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('تم اكتمال فحص الشبكة وتحديث الأجهزة بنجاح!')),
-            );
+          // حفظ الحالة في ذاكرة الهاتف
+          Future<void> _saveData() async {
+            final prefs = await SharedPreferences.getInstance();
+            prefs.setBool('global_block', isGlobalInternetBlocked);
+            for (int i = 2; i < devices.length; i++) {
+              prefs.setBool('block_$i', devices[i].isBlocked);
+              prefs.setString('time_$i', devices[i].blockTime);
+            }
           }
 
           @override
@@ -137,15 +143,6 @@ jobs:
                 title: const Text('التحكم بالإنترنت المنزلي', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 backgroundColor: Colors.indigo,
                 centerTitle: true,
-                actions: [
-                  IconButton(
-                    icon: isScanning 
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Icon(Icons.refresh, color: Colors.white),
-                    onPressed: isScanning ? null : _scanNetwork,
-                    tooltip: 'فحص الشبكة للبحث عن الأجهزة',
-                  ),
-                ],
               ),
               body: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -161,6 +158,7 @@ jobs:
                                 for (var d in devices) {
                                   if (!d.isProtected) d.isBlocked = true;
                                 }
+                                _saveData();
                               });
                             },
                             icon: const Icon(Icons.block, size: 28),
@@ -182,6 +180,7 @@ jobs:
                                 for (var d in devices) {
                                   d.isBlocked = false;
                                 }
+                                _saveData();
                               });
                             },
                             icon: const Icon(Icons.wifi, size: 28),
@@ -196,24 +195,12 @@ jobs:
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: isScanning ? null : _scanNetwork,
-                      icon: const Icon(Icons.radar),
-                      label: Text(isScanning ? 'جاري فحص شبكة المنزل...' : 'فحص الشبكة والبحث عن الأجهزة المتصلة'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo.shade50,
-                        foregroundColor: Colors.indigo.shade900,
-                        minimumSize: const Size.fromHeight(45),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
                     const Align(
                       alignment: Alignment.centerRight,
                       child: Text('الأجهزة المتصلة بالشبكة:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Expanded(
                       child: ListView.builder(
                         itemCount: devices.length,
@@ -233,10 +220,7 @@ jobs:
                                     children: [
                                       Row(
                                         children: [
-                                          Icon(
-                                            device.isProtected ? Icons.admin_panel_settings : Icons.devices, 
-                                            color: device.isProtected ? Colors.amber.shade800 : Colors.indigo,
-                                          ),
+                                          Icon(device.isProtected ? Icons.admin_panel_settings : Icons.devices, color: device.isProtected ? Colors.amber.shade800 : Colors.indigo),
                                           const SizedBox(width: 8),
                                           Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,6 +236,7 @@ jobs:
                                         onChanged: device.isProtected ? null : (value) {
                                           setState(() {
                                             device.isBlocked = value;
+                                            _saveData();
                                           });
                                         },
                                         activeColor: Colors.red,
@@ -310,6 +295,7 @@ jobs:
                       onPressed: () {
                         setState(() {
                           device.blockTime = timeController.text;
+                          _saveData();
                         });
                         Navigator.pop(dialogContext);
                       },
