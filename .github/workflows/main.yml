@@ -214,38 +214,40 @@ jobs:
               ),
             );
           }
-        }
 
-        void _showEditTimeDialog(BuildContext context, DeviceItem device) {
-          TextEditingController timeController = TextEditingController(text: device.blockTime);
-          showDialog(
-            context: context,
-            builder: (dialogContext) {
-              return AlertDialog(
-                title: Text('تعديل وقت الحظر لـ ${device.name}'),
-                content: TextField(
-                  controller: timeController,
-                  decoration: const InputDecoration(
-                    labelText: 'أدخل وقت الحظر (مثال: 22:00 - 06:00)',
-                    border: OutlineInputBorder(),
+          void _showEditTimeDialog(BuildContext context, DeviceItem device) {
+            TextEditingController timeController = TextEditingController(text: device.blockTime);
+            showDialog(
+              context: context,
+              builder: (dialogContext) {
+                return AlertDialog(
+                  title: Text('تعديل وقت الحظر لـ ${device.name}'),
+                  content: TextField(
+                    controller: timeController,
+                    decoration: const InputDecoration(
+                      labelText: 'أدخل وقت الحظر (مثال: 22:00 - 06:00)',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('إلغاء'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      // سيتم تحديث التوقيت مباشرة في الشاشة
-                      Navigator.pop(dialogContext);
-                    },
-                    child: const Text('حفظ'),
-                  ),
-                ],
-              );
-            },
-          );
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('إلغاء'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          device.blockTime = timeController.text;
+                        });
+                        Navigator.pop(dialogContext);
+                      },
+                      child: const Text('حفظ'),
+                    ),
+                  ],
+                );
+              },
+            );
+          }
         }
         EOF
 
