@@ -23,6 +23,11 @@ jobs:
         flutter-version: '3.22.x'
         channel: 'stable'
 
+    - name: Verify Flutter & Project Files
+      run: |
+        flutter --version
+        ls -la
+
     - name: Install Dependencies
       run: flutter pub get
 
