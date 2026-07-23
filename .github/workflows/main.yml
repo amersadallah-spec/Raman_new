@@ -75,8 +75,8 @@ jobs:
           bool isGlobalInternetBlocked = false;
 
           final List<DeviceItem> devices = [
-            DeviceItem(name: 'موبايل الأستاذ عامر (استثناء)', ip: '192.168.1.10', isBlocked: false, blockTime: '00:00 - 00:00', isProtected: true),
-            DeviceItem(name: 'جهاز ماي تي في (My TV - استثناء)', ip: '192.168.1.15', isBlocked: false, blockTime: '00:00 - 00:00', isProtected: true),
+            DeviceItem(name: 'موبايل الأستاذ عامر (استثناء)', ip: '192.168.1.10', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
+            DeviceItem(name: 'جهاز ماي تي في (My TV - استثناء)', ip: '192.168.1.15', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
             DeviceItem(name: 'هاتف الصالة', ip: '192.168.1.20', isBlocked: false, blockTime: '14:00 - 16:00'),
             DeviceItem(name: 'جهاز اللابتوب', ip: '192.168.1.25', isBlocked: false, blockTime: '22:00 - 06:00'),
             DeviceItem(name: 'جهاز الشاشة الذكية', ip: '192.168.1.30', isBlocked: false, blockTime: '01:00 - 05:00'),
@@ -190,7 +190,16 @@ jobs:
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(device.isProtected ? 'محمي دائماً (لا يمكن حظره)' : 'وقت الحظر: ${device.blockTime}', style: TextStyle(fontSize: 12, color: device.isProtected ? Colors.green : Colors.grey.shade700, fontWeight: FontWeight.w500)),
+                                      Text(
+                                        device.isProtected ? 'محمي دائماً (لا يمكن حظره)' : 'وقت الحظر: ${device.blockTime}',
+                                        style: TextStyle(fontSize: 12, color: device.isProtected ? Colors.green : Colors.grey.shade700, fontWeight: FontWeight.w500),
+                                      ),
+                                      if (!device.isProtected)
+                                        TextButton.icon(
+                                          onPressed: () => _showEditTimeDialog(context, device),
+                                          icon: const Icon(Icons.access_time, size: 16),
+                                          label: const Text('تعديل التوقيت', style: TextStyle(fontSize: 12)),
+                                        ),
                                     ],
                                   ),
                                 ],
@@ -205,6 +214,38 @@ jobs:
               ),
             );
           }
+        }
+
+        void _showEditTimeDialog(BuildContext context, DeviceItem device) {
+          TextEditingController timeController = TextEditingController(text: device.blockTime);
+          showDialog(
+            context: context,
+            builder: (dialogContext) {
+              return AlertDialog(
+                title: Text('تعديل وقت الحظر لـ ${device.name}'),
+                content: TextField(
+                  controller: timeController,
+                  decoration: const InputDecoration(
+                    labelText: 'أدخل وقت الحظر (مثال: 22:00 - 06:00)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('إلغاء'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      // سيتم تحديث التوقيت مباشرة في الشاشة
+                      Navigator.pop(dialogContext);
+                    },
+                    child: const Text('حفظ'),
+                  ),
+                ],
+              );
+            },
+          );
         }
         EOF
 
