@@ -23,11 +23,11 @@ jobs:
 
     - uses: actions/checkout@v3
 
-    - name: Create Project & Insert App Code
+    - name: Clean and Create Project
       run: |
-        flutter create . --org com.raman.app --project-name my_app
+        rm -rf android ios linux macos windows web pubspec.yaml lib test
+        flutter create . --org com.raman.app --project-name my_app --platforms=android
         
-        # تحديث pubspec.yaml لإضافة المكتبات المطلوبة
         cat << 'EOF' > pubspec.yaml
         name: my_app
         description: "A new Flutter project for home network control."
@@ -51,7 +51,6 @@ jobs:
           uses-material-design: true
         EOF
 
-        # كتابة كود التطبيق مع ميزة تنبيهات الأجهزة الجديدة
         cat << 'EOF' > lib/main.dart
         import 'package:flutter/material.dart';
         import 'package:shared_preferences/shared_preferences.dart';
@@ -131,7 +130,6 @@ jobs:
             }
           }
 
-          // محاكاة تنبيه اتصال جهاز جديد
           void _simulateNewDeviceAlert() {
             setState(() {
               String newDev = 'تنبيه: تم رصد اتصال جهاز جديد بالشبكة (192.168.1.88)';
