@@ -65,7 +65,7 @@ jobs:
           Widget build(BuildContext context) {
             return MaterialApp(
               debugShowCheckedModeBanner: false,
-              title: 'إدارة شبكة المنزل',
+              title: 'إدارة شبكة الراوتر المنزلي',
               theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
               home: const NetworkControlScreen(),
             );
@@ -99,11 +99,11 @@ jobs:
           bool isGlobalInternetBlocked = false;
 
           final List<DeviceItem> devices = [
-            DeviceItem(name: 'موبايل الأستاذ عامر (استثناء رئيسي)', ip: '192.168.1.10', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
-            DeviceItem(name: 'جهاز ماي تي في (My TV - استثناء)', ip: '192.168.1.15', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
-            DeviceItem(name: 'هاتف الصالة', ip: '192.168.1.20', isBlocked: false, blockTime: '14:00 - 16:00'),
-            DeviceItem(name: 'جهاز اللابتوب', ip: '192.168.1.25', isBlocked: false, blockTime: '22:00 - 06:00'),
-            DeviceItem(name: 'جهاز الشاشة الذكية', ip: '192.168.1.30', isBlocked: false, blockTime: '01:00 - 05:00'),
+            DeviceItem(name: 'موبايل الأستاذ عامر (Samsung S25 Ultra)', ip: '192.168.100.10', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
+            DeviceItem(name: 'جهاز ماي تي في (My TV - استثناء)', ip: '192.168.100.15', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
+            DeviceItem(name: 'هاتف الصالة', ip: '192.168.100.20', isBlocked: false, blockTime: '14:00 - 16:00'),
+            DeviceItem(name: 'جهاز اللابتوب', ip: '192.168.100.25', isBlocked: false, blockTime: '22:00 - 06:00'),
+            DeviceItem(name: 'جهاز الشاشة الذكية', ip: '192.168.100.30', isBlocked: false, blockTime: '01:00 - 05:00'),
           ];
 
           @override
@@ -136,7 +136,7 @@ jobs:
           Widget build(BuildContext context) {
             return Scaffold(
               appBar: AppBar(
-                title: const Text('التحكم بالإنترنت المنزلي', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                title: const Text('راوتر Huawei HG8245H', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                 backgroundColor: Colors.indigo,
                 centerTitle: true,
               ),
@@ -157,12 +157,12 @@ jobs:
                                 _saveData();
                               });
                             },
-                            icon: const Icon(Icons.block, size: 28),
-                            label: const Text('حظر الإنترنت', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            icon: const Icon(Icons.block, size: 26),
+                            label: const Text('حظر الإنترنت', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isGlobalInternetBlocked ? Colors.red : Colors.red.shade100,
                               foregroundColor: isGlobalInternetBlocked ? Colors.white : Colors.red.shade900,
-                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
@@ -179,12 +179,12 @@ jobs:
                                 _saveData();
                               });
                             },
-                            icon: const Icon(Icons.wifi, size: 28),
-                            label: const Text('الاتصال بالإنترنت', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            icon: const Icon(Icons.wifi, size: 26),
+                            label: const Text('الاتصال بالشبكة', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: !isGlobalInternetBlocked ? Colors.green : Colors.green.shade100,
                               foregroundColor: !isGlobalInternetBlocked ? Colors.white : Colors.green.shade900,
-                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
@@ -194,7 +194,7 @@ jobs:
                     const SizedBox(height: 20),
                     const Align(
                       alignment: Alignment.centerRight,
-                      child: Text('الأجهزة المتصلة بالشبكة:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                      child: Text('الأجهزة المتصلة بالراوتر:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
                     ),
                     const SizedBox(height: 10),
                     Expanded(
@@ -221,7 +221,7 @@ jobs:
                                           Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(device.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: device.isProtected ? Colors.green.shade800 : Colors.black87)),
+                                              Text(device.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: device.isProtected ? Colors.green.shade800 : Colors.black87)),
                                               Text(device.ip, style: const TextStyle(color: Colors.grey, fontSize: 12)),
                                             ],
                                           ),
@@ -244,7 +244,7 @@ jobs:
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        device.isProtected ? 'محمي دائماً (لا يمكن حظره)' : 'وقت الحظر: ${device.blockTime}',
+                                        device.isProtected ? 'محمي دائماً (استثناء رئيسي)' : 'وقت الحظر: ${device.blockTime}',
                                         style: TextStyle(fontSize: 12, color: device.isProtected ? Colors.green : Colors.grey.shade700, fontWeight: FontWeight.w500),
                                       ),
                                       if (!device.isProtected)
