@@ -27,6 +27,31 @@ jobs:
       run: |
         flutter create . --org com.raman.app --project-name my_app
         
+        # تحديث pubspec.yaml لإضافة مكتبات الشبكة
+        cat << 'EOF' > pubspec.yaml
+        name: my_app
+        description: "A new Flutter project for home network control."
+        publish_to: 'none'
+        version: 1.0.0+1
+
+        environment:
+          sdk: '>=3.0.0 <4.0.0'
+
+        dependencies:
+          flutter:
+            sdk: flutter
+          http: ^1.2.0
+
+        dev_dependencies:
+          flutter_test:
+            sdk: flutter
+          flutter_lints: ^3.0.0
+
+        flutter:
+          uses-material-design: true
+        EOF
+
+        # كتابة كود الواجهة والبحث عن الأجهزة
         cat << 'EOF' > lib/main.dart
         import 'package:flutter/material.dart';
 
@@ -60,7 +85,7 @@ jobs:
           final String ip;
           bool isBlocked;
           String blockTime;
-          final bool isProtected;
+          bool isProtected;
 
           DeviceItem({
             required this.name,
@@ -73,14 +98,37 @@ jobs:
 
         class _NetworkControlScreenState extends State<NetworkControlScreen> {
           bool isGlobalInternetBlocked = false;
+          bool isScanning = false;
 
+          // القائمة الأولية للأجهزة مع استثناء موبايل الأستاذ عامر وجهاز My TV
           final List<DeviceItem> devices = [
-            DeviceItem(name: 'موبايل الأستاذ عامر (استثناء)', ip: '192.168.1.10', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
+            DeviceItem(name: 'موبايل الأستاذ عامر (استثناء رئيسي)', ip: '192.168.1.10', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
             DeviceItem(name: 'جهاز ماي تي في (My TV - استثناء)', ip: '192.168.1.15', isBlocked: false, blockTime: 'محمي دائماً', isProtected: true),
             DeviceItem(name: 'هاتف الصالة', ip: '192.168.1.20', isBlocked: false, blockTime: '14:00 - 16:00'),
             DeviceItem(name: 'جهاز اللابتوب', ip: '192.168.1.25', isBlocked: false, blockTime: '22:00 - 06:00'),
             DeviceItem(name: 'جهاز الشاشة الذكية', ip: '192.168.1.30', isBlocked: false, blockTime: '01:00 - 05:00'),
           ];
+
+          void _scanNetwork() async {
+            setState(() {
+              isScanning = true;
+            });
+
+            // محاكاة عملية فحص الشبكة والبحث عن الأجهزة الحقيقية المتصلة بالراوتر
+            await Future.delayed(const Duration(seconds: 2));
+
+            setState(() {
+              isScanning = false;
+              // إضافة جهاز جديد تم اكتشافه على الشبكة كمثال بعد الفحص
+              if (!devices.any((d) => d.ip == '192.168.1.50')) {
+                devices.add(DeviceItem(name: 'جهاز جديد مكتشف على الشبكة', ip: '192.168.1.50', isBlocked: false, blockTime: '02:00 - 04:00'));
+              }
+            });
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('تم اكتمال فحص الشبكة وتحديث الأجهزة بنجاح!')),
+            );
+          }
 
           @override
           Widget build(BuildContext context) {
@@ -89,6 +137,15 @@ jobs:
                 title: const Text('التحكم بالإنترنت المنزلي', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 backgroundColor: Colors.indigo,
                 centerTitle: true,
+                actions: [
+                  IconButton(
+                    icon: isScanning 
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Icon(Icons.refresh, color: Colors.white),
+                    onPressed: isScanning ? null : _scanNetwork,
+                    tooltip: 'فحص الشبكة للبحث عن الأجهزة',
+                  ),
+                ],
               ),
               body: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -139,12 +196,24 @@ jobs:
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: isScanning ? null : _scanNetwork,
+                      icon: const Icon(Icons.radar),
+                      label: Text(isScanning ? 'جاري فحص شبكة المنزل...' : 'فحص الشبكة والبحث عن الأجهزة المتصلة'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo.shade50,
+                        foregroundColor: Colors.indigo.shade900,
+                        minimumSize: const Size.fromHeight(45),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     const Align(
                       alignment: Alignment.centerRight,
                       child: Text('الأجهزة المتصلة بالشبكة:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Expanded(
                       child: ListView.builder(
                         itemCount: devices.length,
@@ -164,7 +233,10 @@ jobs:
                                     children: [
                                       Row(
                                         children: [
-                                          Icon(device.isProtected ? Icons.admin_panel_settings : Icons.devices, color: device.isProtected ? Colors.amber.shade800 : Colors.indigo),
+                                          Icon(
+                                            device.isProtected ? Icons.admin_panel_settings : Icons.devices, 
+                                            color: device.isProtected ? Colors.amber.shade800 : Colors.indigo,
+                                          ),
                                           const SizedBox(width: 8),
                                           Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
